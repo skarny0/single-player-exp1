@@ -1,0 +1,54 @@
+.outer-shape {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    display: inline-block;
+    margin: 5px; /* Adjust spacing between shapes */
+    background-color: blue; /* Color for the outer shape */
+}
+  
+.inner-triangle::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 20px solid orange; /* Color for the triangle */
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateY(-10px) translateX(5px);
+}
+  
+.inner-circle::after {
+    content: '';
+    width: 10px; /* Adjust size for inner circle */
+    height: 10px; /* Adjust size for inner circle */
+    border-radius: 50%;
+    background-color: orange; /* Color for the circle */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+  
+.inner-square::after {
+    content: '';
+    width: 10px; /* Adjust size for inner square */
+    height: 10px; /* Adjust size for inner square */
+    background-color: orange; /* Color for the square */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+#game-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 800px; /* Same as your canvas width */
+    height: 800px; /* Same as your canvas height */
+    z-index: 10; /* Higher than the canvas z-index to appear on top */
+}
+  
+  
