@@ -148,32 +148,6 @@ function positionObjectsOnRim() {
 
 let objects = [];
 
-// Function to create a dummy object
-function createDummy() {
-    return {
-      x: Math.random() * world.width, // Random position within the world
-      y: Math.random() * world.height,
-      vx: Math.random() * 4 - 2, // Random velocity between -2 and 2
-      vy: Math.random() * 4 - 2,
-      color: 'red', // getRandomColor(), // Dummy objects will be grey
-      speed: 2, // Same speed as labeled objects for simplicity
-      label: '',
-      active: true
-    };
-}
-
-function getLabeledTarget(){
-    return {
-      x: Math.random() * world.width,
-      y: Math.random() * world.height,
-      vx: 1,
-      vy: 0,
-      color: 'red',
-      speed: 2,
-      label: 'A'
-    }
-}
-
 // Define the number of dummy objects you want
 const numComp = 40; // Example number
 
@@ -181,13 +155,6 @@ const numComp = 40; // Example number
 for (let i = 0; i < numComp; i++) {
   // objects.push(createDummy());
   objects.push(createComposite());
-}
-
-const numberTargets = 1;
-
-
-for (let i = 0; i < numberTargets; i++) {
-  objects.push();
 }
 
 // Position objects on the rim of the observable area
@@ -307,6 +274,8 @@ function tumble(obj) {
   let angle = getRandomAngle();
   obj.vx = Math.cos(angle) * obj.speed;
   obj.vy = Math.sin(angle) * obj.speed;
+
+  console.log(`Initial velocity for object: vx = ${obj.vx}, vy = ${obj.vy}`);
 }
 
 // Define the size of the cubes (assuming they are square)
@@ -325,6 +294,7 @@ function updateObjects() {
         // Update the position
         obj.x += obj.vx;
         obj.y += obj.vy;
+        // console.log(`Object position: (${obj.x}, ${obj.y}) Velocity: (${obj.vx}, ${obj.vy})`);
   
         // Check if the object has exited the game view and mark as inactive
         if (obj.x < 0 || obj.x > canvas.width || obj.y < 0 || obj.y > canvas.height) {
@@ -438,9 +408,7 @@ function drawMask(ctx, player) {
 
 // Game loop
 function gameLoop() {
-  // Update the player, camera, objects, and mini-map
-  // updatePlayerPosition();
-  // updateCamera();
+  const start = performance.now();
   updateObjects(); // Update object positions
   
   objects.forEach(obj => {
@@ -488,8 +456,7 @@ function gameLoop() {
   // // Filter out inactive objects so they are no longer rendered or updated
   objects = objects.filter(obj => obj.active !== false);
 
-  // Draw Mini-Map, Score, Player, and Mask
-  // drawMiniMap();
+  // Draw Score
   drawScore();
   // Reset transformation before drawing player
   ctx.restore();
@@ -499,6 +466,8 @@ function gameLoop() {
   if (areAllObjectsInactive()){
     regenerateObjects();
   } 
+  const end = performance.now();
+  console.log(`Frame Time: ${end - start} ms`);
 
   // Loop the game
   requestAnimationFrame(gameLoop);
