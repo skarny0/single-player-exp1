@@ -103,7 +103,7 @@ function createComposite() {
         innerColor: 'orange',
         shape: shapeType, // Add shape type here
         active: true,
-        speed: 2
+        speed: 1
     };
 }
 
