@@ -89,7 +89,7 @@ function getSquare(obj) {
 }
 
 function createComposite() {
-    let shapeType = Math.random() < 0.1 ? 'triangle' : 'square';
+    let shapeType = Math.random() < 0.05 ? 'triangle' : 'square';
     console.log("Shape type assigned:", shapeType); 
 
     return {
@@ -281,32 +281,51 @@ function tumble(obj) {
 // Define the size of the cubes (assuming they are square)
 const cubeSize = 20;
 
-// Update the objects' positions to make them move with run-and-tumble behavior
+// // Update the objects' positions to make them move with run-and-tumble behavior
+// function updateObjects() {
+//     objects.forEach(obj => {
+//       // Check if the object is active before updating
+//       if (obj.active) {
+//         // Apply tumble if velocities are not valid
+//         if (isNaN(obj.vx) || isNaN(obj.vy) || obj.vx === 0 || obj.vy === 0) {
+//           tumble(obj);
+//         }
+  
+//         // Update the position
+//         obj.x += obj.vx;
+//         obj.y += obj.vy;
+//         // console.log(`Object position: (${obj.x}, ${obj.y}) Velocity: (${obj.vx}, ${obj.vy})`);
+  
+//         // Check if the object has exited the game view and mark as inactive
+//         if (obj.x < 0 || obj.x > canvas.width || obj.y < 0 || obj.y > canvas.height) {
+//           obj.active = false; 
+//           console.log("object exited game view");
+//         }
+//       }
+//     });
+  
+//     // Optionally, you can filter out inactive objects here
+//     objects = objects.filter(obj => obj.active);
+// }
 function updateObjects() {
-    objects.forEach(obj => {
-      // Check if the object is active before updating
-      if (obj.active) {
-        // Apply tumble if velocities are not valid
-        if (isNaN(obj.vx) || isNaN(obj.vy) || obj.vx === 0 || obj.vy === 0) {
-          tumble(obj);
+    objects.forEach((obj, index) => {
+        if (obj.active) {
+            // Existing code for updating position and velocity
+            obj.x += obj.vx;
+            obj.y += obj.vy;
+
+            // Check if the object has exited the game view
+            if (obj.x < 0 || obj.x > canvas.width || obj.y < 0 || obj.y > canvas.height) {
+                obj.active = false;
+                console.log("object exited game view");
+
+                // Immediately spawn a new object
+                objects[index] = createAndPositionNewObject();
+            }
         }
-  
-        // Update the position
-        obj.x += obj.vx;
-        obj.y += obj.vy;
-        // console.log(`Object position: (${obj.x}, ${obj.y}) Velocity: (${obj.vx}, ${obj.vy})`);
-  
-        // Check if the object has exited the game view and mark as inactive
-        if (obj.x < 0 || obj.x > canvas.width || obj.y < 0 || obj.y > canvas.height) {
-          obj.active = false; 
-          console.log("object exited game view");
-        }
-      }
     });
-  
-    // Optionally, you can filter out inactive objects here
-    objects = objects.filter(obj => obj.active);
 }
+
   
 
 // Initialize objects with a speed and a random direction
@@ -315,19 +334,32 @@ objects.forEach(obj => {
     tumble(obj); // Give it an initial random direction
 });      
 
-function areAllObjectsInactive() {
-    return objects.every(obj => !obj.active);
+// function areAllObjectsInactive() {
+//     return objects.every(obj => !obj.active);
+// }
+
+// function regenerateObjects() {
+//     objects = []; // Clear the current objects
+//     for (let i = 0; i < numComp; i++) {
+//         let newObj = createComposite();
+//         newObj.active = true; // Reset active status
+//         tumble(newObj); // Apply tumble to set random direction
+//         objects.push(newObj);
+//     }
+//     positionObjectsOnRim(); // Reposition objects if necessary
+// }
+
+function createAndPositionNewObject() {
+    let newObj = createComposite(); // Create a new object
+    positionObjectOnPeriphery(newObj); // Position it on the periphery
+    tumble(newObj); // Assign a random direction
+    return newObj;
 }
 
-function regenerateObjects() {
-    objects = []; // Clear the current objects
-    for (let i = 0; i < numComp; i++) {
-        let newObj = createComposite();
-        newObj.active = true; // Reset active status
-        tumble(newObj); // Apply tumble to set random direction
-        objects.push(newObj);
-    }
-    positionObjectsOnRim(); // Reposition objects if necessary
+function positionObjectOnPeriphery(obj) {
+    let angle = Math.random() * 2 * Math.PI; // Random angle
+    obj.x = player.x + observableRadius * Math.cos(angle);
+    obj.y = player.y + observableRadius * Math.sin(angle);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------//
@@ -463,9 +495,9 @@ function gameLoop() {
   drawPlayer(ctx, player, camera);
   drawMask(ctx, player);
 
-  if (areAllObjectsInactive()){
-    regenerateObjects();
-  } 
+//   if (areAllObjectsInactive()){
+//     regenerateObjects();
+//   } 
   const end = performance.now();
   console.log(`Frame Time: ${end - start} ms`);
 
