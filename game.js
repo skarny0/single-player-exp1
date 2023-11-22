@@ -88,8 +88,14 @@ function getSquare(obj) {
     ctx.lineTo(obj.x + quarterSize, obj.y + quarterSize);
 }
 
+let targetProbability = 0.1;
+
+document.getElementById('targetProbability').addEventListener('input', function(event) {
+    targetProbability = parseFloat(event.target.value);
+});
+
 function createComposite() {
-    let shapeType = Math.random() < 0.05 ? 'triangle' : 'square';
+    let shapeType = Math.random() < targetProbability ? 'triangle' : 'square';
     console.log("Shape type assigned:", shapeType); 
 
     return {
@@ -108,24 +114,36 @@ function createComposite() {
 }
 
 function drawCompositeShape(obj) {
-    // Outer shape (square)
+    // Draw the object itself
+    ctx.save(); // Save the current state before drawing
     ctx.fillStyle = obj.outerColor;
     ctx.fillRect(obj.x, obj.y, obj.size, obj.size);
+    ctx.restore(); // Restore the state after drawing
 
     // Inner shape
+    ctx.save(); // Save again for the inner shape
     ctx.fillStyle = obj.innerColor;
     ctx.beginPath();
-
-    // Draw the specified shape
     if (obj.shape === 'triangle') {
         getTriangle(obj);
     } else {
         getSquare(obj);
     }
-
-    ctx.closePath();
     ctx.fill();
+    ctx.restore(); // Restore after the inner shape
+
+    // Highlight for triangles
+    if (obj.shape === 'triangle') {
+        ctx.save(); // Save before applying styles for the highlight
+        ctx.beginPath();
+        ctx.arc(obj.x + obj.size / 2, obj.y + obj.size / 2, obj.size, 0, Math.PI * 2);
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 2; // adjust the thickness of the ring
+        ctx.stroke();
+        ctx.restore(); // Restore after drawing the highlight
+    }
 }
+
 
 // ------------------------------------------------------------------------------------------------------------------------//
 
@@ -255,14 +273,6 @@ function updateMiniMap() {
 
 // ------------------------------------------------------------------------------------------------------------------------//
 // Handling object movement & motion
-
-// Key press state
-const keys = {
-  ArrowUp: false,
-  ArrowDown: false,
-  ArrowLeft: false,
-  ArrowRight: false
-};
  
 // Helper function to generate a random angle in radians
 function getRandomAngle() {
@@ -281,32 +291,6 @@ function tumble(obj) {
 // Define the size of the cubes (assuming they are square)
 const cubeSize = 20;
 
-// // Update the objects' positions to make them move with run-and-tumble behavior
-// function updateObjects() {
-//     objects.forEach(obj => {
-//       // Check if the object is active before updating
-//       if (obj.active) {
-//         // Apply tumble if velocities are not valid
-//         if (isNaN(obj.vx) || isNaN(obj.vy) || obj.vx === 0 || obj.vy === 0) {
-//           tumble(obj);
-//         }
-  
-//         // Update the position
-//         obj.x += obj.vx;
-//         obj.y += obj.vy;
-//         // console.log(`Object position: (${obj.x}, ${obj.y}) Velocity: (${obj.vx}, ${obj.vy})`);
-  
-//         // Check if the object has exited the game view and mark as inactive
-//         if (obj.x < 0 || obj.x > canvas.width || obj.y < 0 || obj.y > canvas.height) {
-//           obj.active = false; 
-//           console.log("object exited game view");
-//         }
-//       }
-//     });
-  
-//     // Optionally, you can filter out inactive objects here
-//     objects = objects.filter(obj => obj.active);
-// }
 function updateObjects() {
     objects.forEach((obj, index) => {
         if (obj.active) {
@@ -326,33 +310,17 @@ function updateObjects() {
     });
 }
 
-  
-
 // Initialize objects with a speed and a random direction
 objects.forEach(obj => {
     obj.speed = 1; // Adjust speed as needed
     tumble(obj); // Give it an initial random direction
-});      
-
-// function areAllObjectsInactive() {
-//     return objects.every(obj => !obj.active);
-// }
-
-// function regenerateObjects() {
-//     objects = []; // Clear the current objects
-//     for (let i = 0; i < numComp; i++) {
-//         let newObj = createComposite();
-//         newObj.active = true; // Reset active status
-//         tumble(newObj); // Apply tumble to set random direction
-//         objects.push(newObj);
-//     }
-//     positionObjectsOnRim(); // Reposition objects if necessary
-// }
+});
 
 function createAndPositionNewObject() {
     let newObj = createComposite(); // Create a new object
     positionObjectOnPeriphery(newObj); // Position it on the periphery
-    tumble(newObj); // Assign a random direction
+    tumble(newObj); // Assign a random direction and velocity
+    newObj.active = true; // Ensure the new object is active
     return newObj;
 }
 
@@ -368,49 +336,68 @@ function positionObjectOnPeriphery(obj) {
 let score = 0;  // Initialize the player's score
 
 window.addEventListener('click', function(event) {
-    // Calculate click position relative to the canvas
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
-    const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+    const scaleX = canvas.width / rect.width;    
+    const scaleY = canvas.height / rect.height;  
   
     const canvasX = (event.clientX - rect.left) * scaleX;
     const canvasY = (event.clientY - rect.top) * scaleY;
   
-    // Check if we have clicked on any object
-    objects.forEach(obj => {
-      if (isClickOnObject(obj, canvasX, canvasY)) {
-        obj.active = false; // Disable the object if it was clicked
-        // Handle score or any other object specific logic here
-        if (obj.shape === 'triangle') {
-          console.log("Target!");
-          score += 10;
-          obj.active = false;
-        } else if (obj.shape === 'square') {
-          console.log("Distractor!");
-          score -= 10;
-          obj.active = false;
+    objects = objects.map(obj => {
+        if (isClickOnObject(obj, canvasX, canvasY)) {
+            // Logic for scoring
+            if (obj.shape === 'triangle') {
+                console.log("Target!");
+                score += 10;
+            } else if (obj.shape === 'square') {
+                console.log("Distractor!");
+                score -= 10;
+            }
+            // Replace clicked object with a new one
+            return createAndPositionNewObject();
         }
-      }
+        return obj;
     });
 });
 
-function isClickOnObject(obj, x, y) {
-    const halfSize = 20; // Half the size of your object, assuming 20x20 as in your draw function
-    // Check if the click x, y coordinates are within the object's boundaries
-    return x > obj.x - halfSize &&
-           x < obj.x + halfSize &&
-           y > obj.y - halfSize &&
-           y < obj.y + halfSize;
-}  
+let cursorSize = 40; // Default cursor size
 
+function isClickOnObject(obj, x, y) {
+    return Math.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2) <= cursorSize;
+}
+
+let mouseX = 0, mouseY = 0; // Variables to store the current mouse position
+
+canvas.addEventListener('mousemove', function(event) {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = event.clientX - rect.left;
+    mouseY = event.clientY - rect.top;
+    drawCursor(mouseX, mouseY); // This will now update the global variables
+});
+
+function drawCursor(x, y) {
+    ctx.save(); // Save state
+    ctx.fillStyle = 'rgba(100, 100, 100, 0.5)'; // Semi-transparent grey
+    ctx.beginPath();
+    ctx.arc(x, y, cursorSize, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore(); // Restore state
+}
+
+document.getElementById('cursorSize').addEventListener('input', function(event) {
+    cursorSize = Number(event.target.value);
+});
+
+// ------------------------------------------------------------------------------------------------------------------------//
+
+
+// ------------------------------------------------------------------------------------------------------------------------//
 function drawScore() {
   scoreCtx.clearRect(0, 0, scoreCanvas.width, scoreCanvas.height); // Clear the score canvas
   scoreCtx.font = '16px Roboto';
   scoreCtx.fillStyle = 'black'; // Choose a color that will show on your canvas
   scoreCtx.fillText('Score: ' + score, 10, 20); // Adjust the positioning as needed
 }
-
-// ------------------------------------------------------------------------------------------------------------------------//
 
 function drawMask(ctx, player) {
   // The mask is centered on the canvas, which is the player's constant position on the screen
@@ -452,7 +439,6 @@ function gameLoop() {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw the fixed grid based on the camera's position
   drawGrid();
 
   // Translate the canvas context to keep the player in the center
@@ -464,7 +450,6 @@ function gameLoop() {
   ctx.strokeStyle = 'grey';
   ctx.strokeRect(0, 0, world.width, world.height);
 
-  // Draw objects relative to player's position
   // Draw objects relative to player's position
     objects.forEach(obj => {
         if (obj.active !== false) {
@@ -485,19 +470,18 @@ function gameLoop() {
         }
     });
 
-  // // Filter out inactive objects so they are no longer rendered or updated
+  // Filter out inactive objects so they are no longer rendered or updated
   objects = objects.filter(obj => obj.active !== false);
 
   // Draw Score
   drawScore();
+  drawCursor(mouseX, mouseY);
+
   // Reset transformation before drawing player
   ctx.restore();
-  drawPlayer(ctx, player, camera);
+
   drawMask(ctx, player);
 
-//   if (areAllObjectsInactive()){
-//     regenerateObjects();
-//   } 
   const end = performance.now();
   console.log(`Frame Time: ${end - start} ms`);
 
