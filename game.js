@@ -167,7 +167,7 @@ function positionObjectsOnRim() {
 let objects = [];
 
 // Define the number of dummy objects you want
-const numComp = 40; // Example number
+const numComp = 100; // Example number
 
 // Create dummy objects and add them to the objects array
 for (let i = 0; i < numComp; i++) {
@@ -225,50 +225,6 @@ function drawGrid() {
 
   // Stroke the grid lines
   ctx.stroke();
-}
-
-// Global variables to hold mini-map viewport details
-let miniMapViewport = {
-  x: 0,
-  y: 0,
-  width: 0,
-  height: 0
-};
-
-// Draw the mini-map
-function drawMiniMap() {
-  // These variables must be defined in this scope as well
-  const scaleX = miniMapCanvas.width / world.width;
-  const scaleY = miniMapCanvas.height / world.height;
-
-  // Clear the mini-map
-  miniMapCtx.clearRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
-
-  // Draw the mini-map background
-  miniMapCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-  miniMapCtx.fillRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
-
-  // Draw the player's location on the mini-map as a yellow dot
-  const playerX = player.x * scaleX;
-  const playerY = player.y * scaleY;
-  miniMapCtx.fillStyle = 'yellow';
-  miniMapCtx.beginPath();
-  miniMapCtx.arc(playerX, playerY, 2, 0, Math.PI * 2);
-  miniMapCtx.fill();
-
-  // Draw the circular viewport on the mini-map
-  const observableRadiusOnMiniMap = 400 * scaleX; // Assuming scaleX and scaleY are about the same
-  miniMapCtx.strokeStyle = 'white';
-  miniMapCtx.beginPath();
-  miniMapCtx.arc(playerX, playerY, observableRadiusOnMiniMap, 0, Math.PI * 2);
-  miniMapCtx.stroke();
-}
-
-// Update MiniMap function
-function updateMiniMap() {
-  // Calculate scale factors for the mini-map
-  const scaleX = miniMapCanvas.width / world.width;
-  const scaleY = miniMapCanvas.height / world.height;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------//
@@ -390,8 +346,6 @@ document.getElementById('cursorSize').addEventListener('input', function(event) 
 
 // ------------------------------------------------------------------------------------------------------------------------//
 
-
-// ------------------------------------------------------------------------------------------------------------------------//
 function drawScore() {
   scoreCtx.clearRect(0, 0, scoreCanvas.width, scoreCanvas.height); // Clear the score canvas
   scoreCtx.font = '16px Roboto';
