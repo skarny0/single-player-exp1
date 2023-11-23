@@ -132,16 +132,16 @@ function drawCompositeShape(obj) {
     ctx.fill();
     ctx.restore(); // Restore after the inner shape
 
-    // Highlight for triangles
-    if (obj.shape === 'triangle') {
-        ctx.save(); // Save before applying styles for the highlight
-        ctx.beginPath();
-        ctx.arc(obj.x + obj.size / 2, obj.y + obj.size / 2, obj.size, 0, Math.PI * 2);
-        ctx.strokeStyle = 'green';
-        ctx.lineWidth = 2; // adjust the thickness of the ring
-        ctx.stroke();
-        ctx.restore(); // Restore after drawing the highlight
-    }
+    // // Highlight for triangles
+    // if (obj.shape === 'triangle') {
+    //     ctx.save(); // Save before applying styles for the highlight
+    //     ctx.beginPath();
+    //     ctx.arc(obj.x + obj.size / 2, obj.y + obj.size / 2, obj.size, 0, Math.PI * 2);
+    //     ctx.strokeStyle = 'green';
+    //     ctx.lineWidth = 2; // adjust the thickness of the ring
+    //     ctx.stroke();
+    //     ctx.restore(); // Restore after drawing the highlight
+    // }
 }
 
 
