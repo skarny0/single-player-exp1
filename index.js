@@ -137,6 +137,7 @@ function updateObjects() {
         if (!obj.active && !obj.clicked && obj.shape === 'triangle') {
             // Log missed triangle
             missedTargets.push({ x: obj.x, y: obj.y, time: new Date() });
+            targetMissed();
         }
 
         // If object is inactive, replace it with a new one
@@ -211,6 +212,10 @@ canvas.addEventListener('click', function(event) {
             objects[i].active = false;  // Set the object to inactive if it was clicked
             // Additional code for handling clicked object (e.g., increment score)
             objects[i].clicked = true;
+        }
+
+        if (objects[i].shape === 'triangle') {
+            targetCaught();
         }
     }
 });
@@ -628,3 +633,25 @@ function drawMissedTargetsGraph(missedTargets, gameTime) {
     ctx.fillText("Missed Targets", -canvas.height / 2, padding - 10);
     ctx.restore();
 }
+
+function showTargetMessage(isCaught) {
+    var messageBox = document.getElementById('messageBox');
+    var gameMessage = document.getElementById('gameMessage');
+  
+    messageBox.style.display = 'block'; // Show the message box
+    gameMessage.textContent = isCaught ? 'Target Caught!' : 'Target Missed!'; // Set the message
+  
+    // Optionally, hide the message after a delay
+    setTimeout(function() {
+      messageBox.style.display = 'none';
+    }, 2000); // Hide the message after 2 seconds
+}
+  
+function targetMissed() {
+    showTargetMessage(false);
+}
+
+function targetCaught() {
+    showTargetMessage(true);
+}
+  
