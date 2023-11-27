@@ -13,7 +13,7 @@ let numObjects = 10;
 let aiAssistanceOn = false;
 let mouseX = 0, mouseY = 0;
 let gameInterval, gameStartTime;
-const gameTime = 60000; // Two minutes in milliseconds
+const gameTime = 120000; // Two minutes in milliseconds
 let isGameRunning = false;
 const player = { x: canvas.width / 2, y: canvas.height / 2, speed: 1.5 };
 const observableRadius = 400; // Radius for positioning objects
@@ -76,8 +76,24 @@ function endGame() {
     drawMissedTargetsGraph();
 }
 
-// Game loop
-function gameLoop() {
+// // Game loop
+// function gameLoop() {
+//     if (!isGameRunning) return;
+
+//     if (Date.now() - gameStartTime >= gameTime) {
+//         endGame();
+//         return;
+//     }
+
+//     updateObjects(); // Update positions and states of objects
+//     render();        // Draw objects and other elements on canvas
+//     requestAnimationFrame(gameLoop); // Continue the loop
+// }
+
+const fps = 30; // Desired logic updates per second
+const updateInterval = 1000 / fps; // How many milliseconds per logic update
+
+function gameLoop(timestamp) {
     if (!isGameRunning) return;
 
     if (Date.now() - gameStartTime >= gameTime) {
@@ -85,10 +101,23 @@ function gameLoop() {
         return;
     }
 
-    updateObjects(); // Update positions and states of objects
-    render();        // Draw objects and other elements on canvas
-    requestAnimationFrame(gameLoop); // Continue the loop
+    requestAnimationFrame(gameLoop); // Schedule the next frame
+
+    // Calculate time since last update
+    var deltaTime = timestamp - lastUpdateTime;
+
+    // Check if it's time for the next update
+    if (deltaTime >= updateInterval) {
+        lastUpdateTime = timestamp - (deltaTime % updateInterval);
+        updateObjects(); // Update game logic
+    }
+
+    render(); // Always render as fast as possible (synced to monitor's refresh rate)
 }
+
+var lastUpdateTime = 0;
+requestAnimationFrame(gameLoop); // Start the loop
+
 
 // Render function
 function render() {
@@ -100,9 +129,9 @@ function render() {
     drawWorldBoundary();    // Draw boundaries
     drawObjects();          // Draw objects
     ctx.restore();
-    drawScore();            // Draw score
+    drawMask(ctx, player);
+    // drawScore();            // Draw score
     drawCursor(mouseX,mouseY);           // Draw cursor
-    drawMask(ctx, player);  // Draw mask
 }
 
 // Initialize game objects
@@ -136,7 +165,9 @@ function updateObjects() {
         // Add to missed array iff : 1) Not Active, 2) Not Tagged, 3) Correct Target Shape.
         if (!obj.active && !obj.clicked && obj.shape === 'triangle') {
             // Log missed triangle
-            missedTargets.push({ x: obj.x, y: obj.y, time: new Date() });
+            missedTargets.push({ x: obj.x, y: obj.y, time: new Date()});
+
+            // Calls a function cascade to display a message "Target Missed!"
             targetMissed();
         }
 
@@ -267,7 +298,6 @@ function toggleAIAssistance() {
     // Redraw the canvas to reflect the change in highlighting
     //render();
 }
-
 
 // Function to initialize the starting page
 function initializeStartingPage() {
@@ -413,7 +443,6 @@ function setVelocityTowardsObservableArea(obj, angle) {
     obj.vy = Math.sin(adjustedAngle) * speed;
 }
 
-
 function drawScore() {
     scoreCtx.clearRect(0, 0, scoreCanvas.width, scoreCanvas.height); // Clear the score canvas
     scoreCtx.font = '16px Roboto';
@@ -466,7 +495,7 @@ function isClickOnObject(obj, x, y) {
     return distance <= cursorSize;
 }
 
-function drawMask(ctx, player) {
+function drawMask(ctx) {
     if (!ctx) {
       console.error('drawMask: No drawing context provided');
       return;
@@ -485,6 +514,7 @@ function drawMask(ctx, player) {
     ctx.restore();
 }
 
+// AI Assistance...
 function highlightAssist(obj) {
     // Assuming the highlight is a circle around the object
     ctx.save();
