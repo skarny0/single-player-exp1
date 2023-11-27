@@ -13,7 +13,6 @@ const ctx = canvas.getContext('2d');
 const scoreCanvas = document.getElementById('scoreCanvas');
 const scoreCtx = scoreCanvas.getContext('2d'); // This should be 'scoreCtx', not 'scoreCanvas'
 
-
 // Define the game world boundaries
 const world = {
   width: 2000, // Example width, you can set it as needed
@@ -46,7 +45,7 @@ setupCanvas();
 
 // ------------------------------------------------------------------------------------------------------------------------//
 
-function getTriangle(obj){
+function getTriangle(obj) {
     // Define the points of the triangle
     // Assuming obj.size is the length of the side of the square
     const halfSize = obj.size / 2;
@@ -132,16 +131,22 @@ function drawCompositeShape(obj) {
     ctx.fill();
     ctx.restore(); // Restore after the inner shape
 
-    // // Highlight for triangles
-    // if (obj.shape === 'triangle') {
-    //     ctx.save(); // Save before applying styles for the highlight
-    //     ctx.beginPath();
-    //     ctx.arc(obj.x + obj.size / 2, obj.y + obj.size / 2, obj.size, 0, Math.PI * 2);
-    //     ctx.strokeStyle = 'green';
-    //     ctx.lineWidth = 2; // adjust the thickness of the ring
-    //     ctx.stroke();
-    //     ctx.restore(); // Restore after drawing the highlight
-    // }
+    // highlightAssist();
+
+    
+}
+
+function highlightAssist(){
+    // Highlight for triangles
+    if (obj.shape === 'triangle') {
+        ctx.save(); // Save before applying styles for the highlight
+        ctx.beginPath();
+        ctx.arc(obj.x + obj.size / 2, obj.y + obj.size / 2, obj.size, 0, Math.PI * 2);
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 2; // adjust the thickness of the ring
+        ctx.stroke();
+        ctx.restore(); // Restore after drawing the highlight
+    }
 }
 
 
@@ -290,6 +295,7 @@ function positionObjectOnPeriphery(obj) {
 // Handle Collisions
 
 let score = 0;  // Initialize the player's score
+let missedTargets = [];
 
 window.addEventListener('click', function(event) {
     const rect = canvas.getBoundingClientRect();
@@ -298,9 +304,12 @@ window.addEventListener('click', function(event) {
   
     const canvasX = (event.clientX - rect.left) * scaleX;
     const canvasY = (event.clientY - rect.top) * scaleY;
+
+    let missed = true;
   
-    objects = objects.map(obj => {
+    objects.forEach((obj, index) => {
         if (isClickOnObject(obj, canvasX, canvasY)) {
+            missed = false;
             // Logic for scoring
             if (obj.shape === 'triangle') {
                 console.log("Target!");
@@ -310,11 +319,16 @@ window.addEventListener('click', function(event) {
                 score -= 10;
             }
             // Replace clicked object with a new one
-            return createAndPositionNewObject();
+            objects[index] = createAndPositionNewObject();
         }
-        return obj;
     });
+
+    if (missed) {
+        const currentTime = new Date();
+        missedTargets.push({ time: currentTime, missed: 1 });
+    }
 });
+
 
 let cursorSize = 40; // Default cursor size
 
@@ -378,70 +392,119 @@ function drawMask(ctx, player) {
 }
 
 // ------------------------------------------------------------------------------------------------------------------------//
+let gameInterval;
+let gameStartTime;
+const gameTime = 120000; // Two minutes in milliseconds
+let isGameRunning = false; // Flag to control game state
+
+document.getElementById('start-game-button').addEventListener('click', startGame);
+
+function startGame() {
+    if (!isGameRunning) {
+        gameStartTime = Date.now();
+        gameInterval = setInterval(endGame, gameTime);
+        isGameRunning = true;
+        gameLoop();
+    }
+}
+
+function endGame() {
+    isGameRunning = false; // Update the game running flag
+    clearInterval(gameInterval); // Stop the game interval
+
+    // Display missed targets graph or any other end-of-game logic
+    // displayMissedTargetsGraph();
+
+    console.log("Game Over!");
+}
+
+function startGame() {
+    if (!isGameRunning) {
+        setupCanvas(); // Set up the game canvas
+        // Initialize game objects
+        objects = []; // Clear existing objects if any
+        for (let i = 0; i < numComp; i++) {
+            objects.push(createComposite());
+        }
+        positionObjectsOnRim();
+
+        // Start game logic
+        gameStartTime = Date.now();
+        gameInterval = setInterval(endGame, gameTime);
+        isGameRunning = true;
+        gameLoop();
+    }
+}
 
 // Game loop
 function gameLoop() {
-  const start = performance.now();
-  updateObjects(); // Update object positions
-  
-  objects.forEach(obj => {
-    if (obj.active) {
-      drawCompositeShape(obj); // Draw each object
+    if (!isGameRunning) {
+        return; // Exit the game loop if the game is not running
     }
-  });
 
-  // Clear canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (Date.now() - gameStartTime >= gameTime) {
+        endGame();
+        return; // Exit the game loop
+    }
 
-  drawGrid();
+    const start = performance.now();
+    updateObjects(); // Update object positions
 
-  // Translate the canvas context to keep the player in the center
-  ctx.save();
+    objects.forEach(obj => {
+        if (obj.active) {
+            drawCompositeShape(obj); // Draw each object
+        }
+    });
 
-  ctx.translate(-player.x + canvas.width / 2, -player.y + canvas.height / 2);
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw the game world boundary
-  ctx.strokeStyle = 'grey';
-  ctx.strokeRect(0, 0, world.width, world.height);
+    drawGrid();
 
-  // Draw objects relative to player's position
+    // Translate the canvas context to keep the player in the center
+    ctx.save();
+    ctx.translate(-player.x + canvas.width / 2, -player.y + canvas.height / 2);
+
+    // Draw the game world boundary
+    ctx.strokeStyle = 'grey';
+    ctx.strokeRect(0, 0, world.width, world.height);
+
+    // Draw objects relative to player's position
     objects.forEach(obj => {
         if (obj.active !== false) {
             if (obj.type === 'composite') {
-            drawCompositeShape(obj); // Call this for composite objects
+                drawCompositeShape(obj); // For composite objects
             } else {
-            // For non-composite objects
-            ctx.fillStyle = obj.color;
-            ctx.fillRect(obj.x, obj.y, 20, 20);
-
-            // Draw label only if it exists
-            if (obj.label) {
-                ctx.font = '16px Roboto';
-                ctx.fillStyle = 'white';
-                ctx.fillText(obj.label, obj.x + 5, obj.y + 16);
-            }
+                // For non-composite objects
+                ctx.fillStyle = obj.color;
+                ctx.fillRect(obj.x, obj.y, 20, 20);
+                if (obj.label) {
+                    ctx.font = '16px Roboto';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(obj.label, obj.x + 5, obj.y + 16);
+                }
             }
         }
     });
 
-  // Filter out inactive objects so they are no longer rendered or updated
-  objects = objects.filter(obj => obj.active !== false);
+    // Filter out inactive objects so they are no longer rendered or updated
+    objects = objects.filter(obj => obj.active !== false);
 
-  // Draw Score
-  drawScore();
-  drawCursor(mouseX, mouseY);
+    // Draw Score
+    drawScore();
+    drawCursor(mouseX, mouseY);
 
-  // Reset transformation before drawing player
-  ctx.restore();
+    // Reset transformation before drawing player
+    ctx.restore();
+    drawMask(ctx, player);
 
-  drawMask(ctx, player);
+    const end = performance.now();
+    console.log(`Frame Time: ${end - start} ms`);
 
-  const end = performance.now();
-  console.log(`Frame Time: ${end - start} ms`);
-
-  // Loop the game
-  requestAnimationFrame(gameLoop);
+    if (isGameRunning) {
+        requestAnimationFrame(gameLoop); // Continue the loop only if the game is running
+    }
 }
-
-// Start the game loop
-gameLoop();
+// Initialization
+initializeBlankCanvas();
+document.getElementById('start-game-button').addEventListener('click', startGame);
