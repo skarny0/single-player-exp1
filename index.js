@@ -105,7 +105,6 @@ function gameLoop(timestamp) {
 
     // Calculate time since last update
     var deltaTime = timestamp - lastUpdateTime;
-
     // Check if it's time for the next update
     if (deltaTime >= updateInterval) {
         lastUpdateTime = timestamp - (deltaTime % updateInterval);
@@ -245,7 +244,7 @@ canvas.addEventListener('click', function(event) {
             objects[i].clicked = true;
         }
 
-        if (objects[i].shape === 'triangle') {
+        if (objects[i].shape === 'triangle' && objects[i].clicked) {
             targetCaught();
         }
     }
