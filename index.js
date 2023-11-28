@@ -6,10 +6,12 @@ const scoreCtx = scoreCanvas.getContext('2d');
 const world = { width: 2000, height: 2000 };
 let objects = [];
 let score = 0;
+let caughtTargets = [];
 let missedTargets = [];
 let caughtDistractors = [];
 let cursorSize = 40;
 let numObjects = 10;
+
 let aiAssistanceOn = false;
 let mouseX = 0, mouseY = 0;
 let gameInterval, gameStartTime;
@@ -24,6 +26,9 @@ const camera = {
     width: canvas.width,
     height: canvas.height
 };
+
+const fps = 30; // Desired logic updates per second
+const updateInterval = 1000 / fps; // How many milliseconds per logic update
 
 
 // Start Game function
@@ -54,6 +59,10 @@ function endGame() {
     isGameRunning = false;
     clearInterval(gameInterval);
     console.log("Game Over!");
+
+    console.log("Caught Targets", caughtTargets);
+    console.log("Missed Targets", missedTargets);
+    console.log("Caught Distractors", caughtDistractors)
     // Additional end-game logic here
 
     // Remove the mousemove event listener
@@ -65,33 +74,17 @@ function endGame() {
     document.getElementById('sliderContainer').style.display = 'none';
     document.getElementById('robotContainer').style.display = 'none';
 
-    // Show the histogram canvas and center it on the screen
-    const missedTargetsGraph = document.getElementById('missedTargetsGraph');
-    missedTargetsGraph.style.display = 'block';
-    missedTargetsGraph.style.position = 'absolute';
-    missedTargetsGraph.style.left = '50%';
-    missedTargetsGraph.style.top = '50%';
-    missedTargetsGraph.style.transform = 'translate(-50%, -50%)';
+    // // Show the histogram canvas and center it on the screen
+    // const missedTargetsGraph = document.getElementById('missedTargetsGraph');
+    // missedTargetsGraph.style.display = 'block';
+    // missedTargetsGraph.style.position = 'absolute';
+    // missedTargetsGraph.style.left = '50%';
+    // missedTargetsGraph.style.top = '50%';
+    // missedTargetsGraph.style.transform = 'translate(-50%, -50%)';
 
-    drawMissedTargetsGraph();
+    // drawMissedTargetsGraph();
 }
 
-// // Game loop
-// function gameLoop() {
-//     if (!isGameRunning) return;
-
-//     if (Date.now() - gameStartTime >= gameTime) {
-//         endGame();
-//         return;
-//     }
-
-//     updateObjects(); // Update positions and states of objects
-//     render();        // Draw objects and other elements on canvas
-//     requestAnimationFrame(gameLoop); // Continue the loop
-// }
-
-const fps = 30; // Desired logic updates per second
-const updateInterval = 1000 / fps; // How many milliseconds per logic update
 
 function gameLoop(timestamp) {
     if (!isGameRunning) return;
@@ -224,6 +217,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             canvas.removeEventListener('click', startGame); // Remove the event listener after starting the game
         }
     });
+
 });
 
 canvas.addEventListener('mousemove', handleMouseMove);
@@ -245,10 +239,13 @@ canvas.addEventListener('click', function(event) {
         }
 
         if (objects[i].shape === 'triangle' && objects[i].clicked) {
-            targetCaught();
+            targetCaught(objects[i]);
+        } else if (objects[i].shape != 'triangle' && objects[i].clicked) {
+            distractorCaught(objects[i]);
         }
     }
 });
+
 
 // Function to handle cursor size change
 function handleCursorSizeChange(event) {
@@ -680,7 +677,14 @@ function targetMissed() {
     showTargetMessage(false);
 }
 
-function targetCaught() {
+function targetCaught(obj) {
     showTargetMessage(true);
+    caughtTargets.push({ x: obj.x, y: obj.y, time: new Date()});
+    console.log("Target was caught and pushed into array.")
+}
+
+function distractorCaught(obj){
+    caughtDistractors.push({x: obj.x, y: obj.y, time: new Date()});
+    console.log("Distractor pushed into array.");
 }
   
