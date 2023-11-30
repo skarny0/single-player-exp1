@@ -9,9 +9,11 @@ let score = 0;
 let caughtTargets = [];
 let missedTargets = [];
 let caughtDistractors = [];
+
+// variable game elements
 let cursorSize = 40;
 let numObjects = 10;
-
+let targetProbability = 0.01;
 let aiAssistanceOn = false;
 let mouseX = 0, mouseY = 0;
 let gameInterval, gameStartTime;
@@ -19,7 +21,7 @@ const gameTime = 120000; // Two minutes in milliseconds
 let isGameRunning = false;
 const player = { x: canvas.width / 2, y: canvas.height / 2, speed: 1.5 };
 const observableRadius = 400; // Radius for positioning objects
-let targetProbability = 0.01;
+
 const camera = {
     x: player.x - canvas.width / 2,
     y: player.y - canvas.height / 2,
@@ -27,7 +29,7 @@ const camera = {
     height: canvas.height
 };
 
-const fps = 30; // Desired logic updates per second
+const fps = 60; // Desired logic updates per second
 const updateInterval = 1000 / fps; // How many milliseconds per logic update
 
 
@@ -48,6 +50,7 @@ function startGame() {
         setupCanvas();
         initializeObjects();
         gameStartTime = Date.now();
+        console.log(gameTime); // Log the game time
         gameInterval = setInterval(endGame, gameTime);
         isGameRunning = true;
         gameLoop();
@@ -57,6 +60,7 @@ function startGame() {
 // End Game function
 function endGame() {
     isGameRunning = false;
+    console.log(gameTime); // Add this line
     clearInterval(gameInterval);
     console.log("Game Over!");
 
@@ -74,15 +78,15 @@ function endGame() {
     document.getElementById('sliderContainer').style.display = 'none';
     document.getElementById('robotContainer').style.display = 'none';
 
-    // // Show the histogram canvas and center it on the screen
-    // const missedTargetsGraph = document.getElementById('missedTargetsGraph');
-    // missedTargetsGraph.style.display = 'block';
-    // missedTargetsGraph.style.position = 'absolute';
-    // missedTargetsGraph.style.left = '50%';
-    // missedTargetsGraph.style.top = '50%';
-    // missedTargetsGraph.style.transform = 'translate(-50%, -50%)';
+    // Show the histogram canvas and center it on the screen
+    const missedTargetsGraph = document.getElementById('missedTargetsGraph');
+    missedTargetsGraph.style.display = 'block';
+    missedTargetsGraph.style.position = 'absolute';
+    missedTargetsGraph.style.left = '50%';
+    missedTargetsGraph.style.top = '50%';
+    missedTargetsGraph.style.transform = 'translate(-50%, -50%)';
 
-    // drawMissedTargetsGraph();
+    drawMissedTargetsGraph(missedTargets, caughtTargets, caughtDistractors, gameTime);
 }
 
 
@@ -141,8 +145,8 @@ function updateObjects() {
     console.log('Updating objects');
     objects.forEach((obj, index) => {
         if (obj.active) {
-            obj.x += obj.vx; // Update x position
-            obj.y += obj.vy; // Update y position
+            obj.x += obj.vx * obj.speed; // Update x position
+            obj.y += obj.vy * obj.speed; // Update y position
             // Add boundary checks and other logic as needed
 
             // Check if the object is outside the observable area
@@ -192,6 +196,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.getElementById('cursorSize').addEventListener('input', handleCursorSizeChange);
     document.getElementById('targetProbability').addEventListener('input', handleTargetProbChange);
     document.getElementById('numObjects').addEventListener('input', handleNumObjectsChange);
+
     document.getElementById('toggleAIAssistance').addEventListener('click', toggleAIAssistance);
     document.getElementById('aiAssistRobot').addEventListener('click', toggleAIAssistance);
 
@@ -220,8 +225,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 });
 
-canvas.addEventListener('mousemove', handleMouseMove);
-
 canvas.addEventListener('click', function(event) {
     // Calculate the click position relative to the canvas
     const rect = canvas.getBoundingClientRect();
@@ -245,6 +248,8 @@ canvas.addEventListener('click', function(event) {
         }
     }
 });
+
+canvas.addEventListener('mousemove', handleMouseMove);
 
 
 // Function to handle cursor size change
@@ -271,7 +276,6 @@ function handleNumObjectsChange(event){
         // Remove objects if the new number is smaller
         objects.splice(newNumObjects, -difference);
     }
-    
     // No need to reinitialize or redraw all objects, just adjust the existing array
 }
 
@@ -343,17 +347,20 @@ function createComposite() {
 
     let newObj = {
         type: 'composite',
+        speed: getObjectSpeed(),
         x: 50,
         y: 50,
-        vx: 1,
-        vy: 1,
+        vx: Math.random() * 2 - getObjectSpeed(),
+        vy: Math.random() * 2 - getObjectSpeed(),
         size: shapeSize,
         outerColor: 'blue',
         innerColor: 'orange',
         shape: shapeType, // Add shape type here
-        active: true,
-        speed: 0.5
+        active: true
     };
+
+    console.log(newObj.speed);
+
     tumble(newObj);
     return newObj;
 }
@@ -476,6 +483,20 @@ function handleMouseMove(event) {
     const rect = canvas.getBoundingClientRect();
     mouseX = (event.clientX - rect.left);
     mouseY = (event.clientY - rect.top);
+
+    // Clear the previous frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // // Create the gradient
+    // gradientRadius = 100;
+
+    // let gradient = ctx.createRadialGradient(mouseX, mouseY, gradientRadius, mouseX, mouseY, canvas.width);
+    // gradient.addColorStop(0, 'rgba(0, 0, 0, 0)'); // Semi-transparent black at center
+    // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Fully transparent at edges
+
+    // // Draw the fog
+    // ctx.fillStyle = gradient;
+    // ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 // Helper function to determine if the click is on the object
@@ -530,7 +551,6 @@ function highlightAssist(obj) {
     ctx.restore();
 }
 
-
 function getTriangle(obj) {
     // Define the points of the triangle
     // Assuming obj.size is the length of the side of the square
@@ -580,6 +600,10 @@ function getCircle(obj) {
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
 }
 
+function getObjectSpeed(){
+    return (Math.floor(Math.random() * 4) + 1) * 0.5;
+}
+
 // Draw Grid function
 function drawGrid() {
     // Begin path for grid lines
@@ -604,60 +628,6 @@ function drawGrid() {
   
     // Stroke the grid lines
     ctx.stroke();
-}
-
-function drawMissedTargetsGraph(missedTargets, gameTime) {
-    const canvas = document.getElementById('missedTargetsGraph');
-    const ctx = canvas.getContext('2d');
-    canvas.style.display = 'block'; 
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const padding = 40;
-    const interval = 10000; // 10-second intervals
-    const numIntervals = gameTime / interval;
-    let intervalCounts = new Array(numIntervals).fill(0);
-
-    // Count missed targets for each interval
-    missedTargets.forEach(target => {
-        let intervalIndex = Math.floor((target.time - gameStartTime) / interval);
-        if (intervalIndex < numIntervals) {
-            intervalCounts[intervalIndex]++;
-        }
-    });
-
-    // Find max count for scaling
-    let maxCount = Math.max(...intervalCounts);
-
-    // Draw bars for each interval
-    for (let i = 0; i < numIntervals; i++) {
-        let barHeight = (intervalCounts[i] / maxCount) * (canvas.height - 2 * padding);
-        let barWidth = (canvas.width - 2 * padding) / numIntervals;
-        let x = padding + i * barWidth;
-        let y = canvas.height - padding - barHeight;
-
-        ctx.fillStyle = '#007bff';
-        ctx.fillRect(x, y, barWidth - 5, barHeight); // -5 for spacing between bars
-
-        ctx.fillText(`${i * 10}s`, x, canvas.height - padding + 20);
-    }
-
-    // Additional styling like axes, labels, etc.
-
-    // Draw y-axis labels (number of targets)
-    const yAxisLabelCount = 5; // For example, 5 labels on the y-axis
-    for (let i = 0; i <= yAxisLabelCount; i++) {
-        let label = Math.round(maxCount * (i / yAxisLabelCount));
-        let y = canvas.height - padding - (i * (canvas.height - 2 * padding) / yAxisLabelCount);
-
-        ctx.fillText(label, padding - 10, y);
-    }
-
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = "center";
-    ctx.fillText("Missed Targets", -canvas.height / 2, padding - 10);
-    ctx.restore();
 }
 
 function showTargetMessage(isCaught) {
@@ -687,4 +657,82 @@ function distractorCaught(obj){
     caughtDistractors.push({x: obj.x, y: obj.y, time: new Date()});
     console.log("Distractor pushed into array.");
 }
+
+function drawMissedTargetsGraph(missedTargets, caughtTargets, caughtDistractors, gameTime) {
+    if (!Number.isFinite(gameTime) || gameTime <= 0) {
+        console.error('Invalid game time:', gameTime);
+        return;
+    }
+
+    const canvas = document.getElementById('missedTargetsGraph');
+    const ctx = canvas.getContext('2d');
+    canvas.style.display = 'block';
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padding = 40;
+    const interval = 10000; // 10-second intervals
+    const numIntervals = Math.ceil(gameTime / interval);
+
+    if (!Number.isInteger(numIntervals) || numIntervals <= 0) {
+        console.error('Invalid number of intervals:', numIntervals);
+        return;
+    }
+
+    let intervalCounts = new Array(numIntervals).fill(0);
+
+    // Count missed targets for each interval
+    missedTargets.forEach(target => {
+        let intervalIndex = Math.floor((target.time - gameStartTime) / interval);
+        if (intervalIndex < numIntervals) {
+            intervalCounts[intervalIndex]++;
+        }
+    });
+
+    // Find max count for scaling
+    let maxCount = Math.max(...intervalCounts);
+
+    // Draw bars for each interval
+    for (let i = 0; i < numIntervals; i++) {
+        let barHeight = (intervalCounts[i] / maxCount) * (canvas.height - 2 * padding);
+        let barWidth = (canvas.width - 2 * padding) / numIntervals;
+        let x = padding + i * barWidth;
+        let y = canvas.height - padding - barHeight;
+
+        ctx.fillStyle = '#007bff';
+        ctx.fillRect(x, y, barWidth - 5, barHeight); // -5 for spacing between bars
+
+        ctx.fillText(`${i * 10}s`, x, canvas.height - padding + 20);
+    }
+
+    // Draw y-axis labels (number of targets)
+    const yAxisLabelCount = 5; // For example, 5 labels on the y-axis
+    for (let i = 0; i <= yAxisLabelCount; i++) {
+        let label = Math.round(maxCount * (i / yAxisLabelCount));
+        let y = canvas.height - padding - (i * (canvas.height - 2 * padding) / yAxisLabelCount);
+
+        ctx.fillText(label, padding - 10, y);
+    }
+
+    ctx.save();
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillText("Missed Targets", -canvas.height / 2, padding - 10);
+    ctx.restore();
+
+    // Draw caught targets
+    ctx.fillStyle = '#28a745';
+    caughtTargets.forEach(target => {
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // Draw caught objects
+    ctx.fillStyle = '#ffc107';
+    caughtDistractors.forEach(object => {
+        ctx.fillRect(object.x, object.y, 10, 10);
+    });
+}
+
   
